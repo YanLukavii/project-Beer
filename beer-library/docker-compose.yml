@@ -1,0 +1,111 @@
+version: "3.9"
+services:
+
+  beer-eureka-server:
+    build:
+      context: ..
+      dockerfile: Dockerfile-beer-eureka-server
+    ports:
+      - "8761:8761"
+
+  beer-library-app:
+    build:
+      context: ..
+      dockerfile: Dockerfile-beer-library-app
+    ports:
+      - "8080:8080"
+    # Эти свойства перегружают соответствующие в application.yml
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://beer-db:5432/db
+      - SPRING_DATASOURCE_USERNAME=usr
+      - SPRING_DATASOURCE_PASSWORD=pwd
+      - eureka.client.register-with-eureka=true
+      - eureka.client.fetch-registry=true
+      - eureka.client.service-url.defaultZone=http://beer-eureka-server:8761/eureka/
+      - eureka.instance.prefer-ip-address=true
+    depends_on:
+       - beer-db
+       - beer-eureka-server
+
+  beer-library-comment-service:
+    build:
+      context: ..
+      dockerfile: Dockerfile-beer-library-comment-service
+    ports:
+      - "8084:8084"
+    # Эти свойства перегружают соответствующие в application.yml
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://beer-db:5432/db
+      - SPRING_DATASOURCE_USERNAME=usr
+      - SPRING_DATASOURCE_PASSWORD=pwd
+      - spring.kafka.bootstrap-servers=broker:9092
+      - spring.kafka.consumer.bootstrap-servers=broker:9092
+      - spring.kafka.producer.bootstrap-servers=broker:9092
+    depends_on:
+      - beer-db
+      - broker
+
+  beer-library-client:
+    build:
+      context: ..
+      dockerfile: Dockerfile-beer-library-client
+    ports:
+      - "8081:8081"
+    # Эти свойства перегружают соответствующие в application.yml
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://secure-db:5432/db2
+      - SPRING_DATASOURCE_USERNAME=usr
+      - SPRING_DATASOURCE_PASSWORD=pwd
+      - eureka.client.register-with-eureka=true
+      - eureka.client.fetch-registry=true
+      - eureka.client.service-url.defaultZone=http://beer-eureka-server:8761/eureka/
+      - eureka.instance.prefer-ip-address=true
+      - spring.kafka.bootstrap-servers=broker:9092
+      - spring.kafka.consumer.bootstrap-servers=broker:9092
+      - spring.kafka.producer.bootstrap-servers=broker:9092
+    depends_on:
+      - secure-db
+      - beer-eureka-server
+      - broker
+
+  secure-db:
+    image: "postgres:13"
+    ports:
+      - "5431:5432"
+    environment:
+      - POSTGRES_USER=usr
+      - POSTGRES_PASSWORD=pwd
+      - POSTGRES_DB=db2
+
+  beer-db:
+    image: "postgres:13"
+    ports:
+      - "5430:5432"
+    environment:
+      - POSTGRES_USER=usr
+      - POSTGRES_PASSWORD=pwd
+      - POSTGRES_DB=db
+
+
+  zookeeper:
+      image: confluentinc/cp-zookeeper:6.2.0
+      container_name: zookeeper
+      environment:
+        ZOOKEEPER_CLIENT_PORT: 2181
+        ZOOKEEPER_TICK_TIME: 2000
+
+  broker:
+      image: confluentinc/cp-kafka:7.0.0
+      container_name: broker
+      ports:
+        - "9092:9092"
+      depends_on:
+        - zookeeper
+      environment:
+        KAFKA_BROKER_ID: 1
+        KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+        KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
+        KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://broker:9092,PLAINTEXT_INTERNAL://broker:9093
+        KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+        KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+        KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1

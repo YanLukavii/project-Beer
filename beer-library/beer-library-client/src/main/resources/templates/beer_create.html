@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Add Beer</title>
+    <style type="text/css">
+        body {
+            padding: 50px;
+        }
+
+        label {
+            display: inline-block;
+            width: 100px;
+        }
+
+        input:read-only {
+            background: lightgray;
+        }
+
+        .row {
+            margin-top: 10px;
+        }
+         .errors {
+            color: red;
+        }
+
+    </style>
+</head>
+
+<body>
+
+<h1>Add Beer</h1>
+<form id="create-form" action="beer_create.html" th:method="post">
+
+    <div class="row">
+        <label for="beer-title-save">Title:</label>
+        <input id="beer-title-save" name="title" type="text" value=""/>
+    </div>
+
+    <div class="row">
+        <label for="brandId">Brand:</label>
+        <select id="brandId" name="brandId">
+            <option value="">Select Brand</option>
+        </select>
+    </div>
+
+    <div class="row">
+        <label for="colorId">Color:</label>
+        <select id="colorId" name="colorId">
+            <option value="">Select Color</option>
+        </select>
+    </div>
+
+    <div class="row">
+        <label for="beer-volume-save">volume:</label>
+        <input id="beer-volume-save" name="volume" type="text" value=""/>
+    </div>
+
+    <div class="row">
+        <label for="beer-alcohol-percentage-save">alcohol-percentage:</label>
+        <input id="beer-alcohol-percentage-save" name="alcohol-percentage" type="text" value=""/>
+    </div>
+
+    <div class="row">
+        <button type="button" onclick="saveBeer()">Save</button>
+        <a href="beer_list.html" th:href="@{/library}">
+            <button type="button">Go Back</button>
+        </a>
+    </div>
+</form>
+
+<script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+<script>
+        function saveBeer() {
+
+            const savedBeerContainer = document.getElementById("saved-beer")
+            const titleInput = document.getElementById("beer-title-save")
+            const volumeInput = document.getElementById("beer-volume-save")
+            const alcoholPercentageInput = document.getElementById("beer-alcohol-percentage-save")
+            const brandInput = document.getElementById("brandId")
+            const colorInput = document.getElementById("colorId")
+
+              if (titleInput.value.trim() !== ''
+               && volumeInput.value.trim() !== ''
+                && alcoholPercentageInput.value.trim() !== ''
+                && brandInput.value.trim() !== ''
+                && colorInput.value.trim() !== '')
+                {
+
+            const beer = {
+            title: titleInput.value,
+            brandId: brandInput.value,
+            colorId: colorInput.value,
+            alcoholPercentage: alcoholPercentageInput.value,
+            volume: volumeInput.value
+           }
+
+            fetch("/api/beers", {
+                method: 'POST',
+                headers: {
+                  'Accept': 'application/json',
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(beer)})
+            .then(rawResponse => rawResponse.json())
+            .then(json => savedBeerContainer.innerHTML = JSON.stringify(json, null, 4))
+        }  else {
+        alert("Fields cannot be empty!")
+}}
+</script>
+<script>
+        $(document).ready(function() {
+            $.ajax({
+                url: "/api/brands",
+                type: "GET",
+                dataType: "json",
+                success: function(brands) {
+                    $.each(brands, function(i, brand) {
+                        $("#brandId").append("<option value='" + brand.id + "'>" + brand.name + "</option>");
+                    });
+                }
+            });
+        });
+</script>
+
+<script>
+        $(document).ready(function() {
+            $.ajax({
+                url: "/api/colors",
+                type: "GET",
+                dataType: "json",
+                success: function(colors) {
+                    $.each(colors, function(i, color) {
+                        $("#colorId").append("<option value='" + color.id + "'>" + color.name + "</option>");
+                    });
+                }
+            });
+        });
+</script>
+
+<h3>Saved Beer:</h3>
+<pre id="saved-beer"></pre>
+</body>
+</html>
