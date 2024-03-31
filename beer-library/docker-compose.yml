@@ -3,14 +3,14 @@ services:
 
   beer-eureka-server:
     build:
-      context: ..
+      context: .
       dockerfile: Dockerfile-beer-eureka-server
     ports:
       - "8761:8761"
 
   beer-library-app:
     build:
-      context: ..
+      context: .
       dockerfile: Dockerfile-beer-library-app
     ports:
       - "8080:8080"
@@ -29,7 +29,7 @@ services:
 
   beer-library-comment-service:
     build:
-      context: ..
+      context: .
       dockerfile: Dockerfile-beer-library-comment-service
     ports:
       - "8084:8084"
@@ -47,7 +47,7 @@ services:
 
   beer-library-client:
     build:
-      context: ..
+      context: .
       dockerfile: Dockerfile-beer-library-client
     ports:
       - "8081:8081"
